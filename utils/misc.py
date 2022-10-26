@@ -3,7 +3,6 @@ import time
 import numpy as np
 import yaml
 import csv
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,8 +10,7 @@ from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from .networks import MLP, ConvNet, LeNet, AlexNet, VGG11BN, VGG11, ResNet18, ResNet18BN_AP
 
-__all__ = ['get_dataset', 'get_network', 'get_time', 'get_loops', 'get_daparam', 'get_eval_pool',
-           'mkdir', 'flatten_tensor', 'inf_train_gen', 'load_yaml', 'write_yaml', 'write_csv', 'TensorDataset']
+__all__ = ['get_dataset', 'get_network', 'get_time', 'get_loops', 'get_daparam', 'get_eval_pool', 'mkdir', 'flatten_tensor', 'inf_train_gen', 'TensorDataset', 'load_yaml', 'write_yaml']
 
 
 def get_dataset(dataset, data_path):
@@ -38,7 +36,7 @@ def get_dataset(dataset, data_path):
         dst_test = datasets.FashionMNIST(data_path, train=False, download=True, transform=transform)
         class_names = dst_train.classes
 
-    elif 'SVHN' in dataset:
+    elif dataset == 'SVHN':
         channel = 3
         im_size = (32, 32)
         num_classes = 10
@@ -49,7 +47,7 @@ def get_dataset(dataset, data_path):
         dst_test = datasets.SVHN(data_path, split='test', download=True, transform=transform)
         class_names = [str(c) for c in range(num_classes)]
 
-    elif 'CIFAR10' in dataset:
+    elif dataset == 'CIFAR10':
         channel = 3
         im_size = (32, 32)
         num_classes = 10
@@ -60,7 +58,7 @@ def get_dataset(dataset, data_path):
         dst_test = datasets.CIFAR10(data_path, train=False, download=True, transform=transform)
         class_names = dst_train.classes
 
-    elif 'CIFAR100' in dataset:
+    elif dataset == 'CIFAR100':
         channel = 3
         im_size = (32, 32)
         num_classes = 100
@@ -77,13 +75,10 @@ def get_dataset(dataset, data_path):
         num_classes = 2
         mean = [0.5, 0.5, 0.5]
         std = [0.5, 0.5, 0.5]
-        transform = transforms.Compose(
-            [transforms.Resize((64, 64)), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
+        transform = transforms.Compose([transforms.Resize((64, 64)), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
         target_transform = lambda arr: arr[20]  # obtain the value of the 'Male' attribute
-        dst_train = datasets.CelebA(data_path, split='train', download=True, transform=transform,
-                                    target_transform=target_transform)  # no augmentation
-        dst_test = datasets.CelebA(data_path, split='test', download=True, transform=transform,
-                                   target_transform=target_transform)
+        dst_train = datasets.CelebA(data_path, split='train', download=True, transform=transform, target_transform=target_transform)  # no augmentation
+        dst_test = datasets.CelebA(data_path, split='test', download=True, transform=transform, target_transform=target_transform)
         class_names = ['female', 'male']
 
     else:
@@ -111,8 +106,7 @@ def get_network(model, channel, num_classes, im_size=(32, 32)):
     elif model == 'MLPLN':
         net = MLP(channel=channel, num_classes=num_classes, net_norm='layernorm', im_size=im_size)
     elif model == 'ConvNet':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm=net_norm, net_pooling=net_pooling, im_size=im_size)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling, im_size=im_size)
     elif model == 'LeNet':
         net = LeNet(channel=channel, num_classes=num_classes)
     elif model == 'AlexNet':
@@ -127,66 +121,47 @@ def get_network(model, channel, num_classes, im_size=(32, 32)):
         net = ResNet18BN_AP(channel=channel, num_classes=num_classes)
 
     elif model == 'ConvNetD1':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=1, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=1, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetD2':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=2, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=2, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetD3':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=3, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=3, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetD4':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=4, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=4, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
 
     elif model == 'ConvNetW32':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=32, net_depth=net_depth, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=32, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetW64':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=64, net_depth=net_depth, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=64, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetW128':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=128, net_depth=net_depth, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=128, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetW256':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=256, net_depth=net_depth, net_act=net_act,
-                      net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=256, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling)
 
     elif model == 'ConvNetAS':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act='sigmoid', net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act='sigmoid', net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetAR':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act='relu', net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act='relu', net_norm=net_norm, net_pooling=net_pooling)
     elif model == 'ConvNetAL':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act='leakyrelu', net_norm=net_norm, net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act='leakyrelu', net_norm=net_norm, net_pooling=net_pooling)
 
     elif model == 'ConvNetNN':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm='none', net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm='none', net_pooling=net_pooling)
     elif model == 'ConvNetBN':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm='batchnorm', net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm='batchnorm', net_pooling=net_pooling)
     elif model == 'ConvNetLN':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm='layernorm', net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm='layernorm', net_pooling=net_pooling)
     elif model == 'ConvNetIN':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm='instancenorm', net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm='instancenorm', net_pooling=net_pooling)
     elif model == 'ConvNetGN':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm='groupnorm', net_pooling=net_pooling)
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm='groupnorm', net_pooling=net_pooling)
 
     elif model == 'ConvNetNP':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm=net_norm, net_pooling='none')
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling='none')
     elif model == 'ConvNetMP':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm=net_norm, net_pooling='maxpooling')
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling='maxpooling')
     elif model == 'ConvNetAP':
-        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth,
-                      net_act=net_act, net_norm=net_norm, net_pooling='avgpooling')
+        net = ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling='avgpooling')
 
     else:
         net = None
@@ -291,26 +266,6 @@ def inf_train_gen(trainloader):
             yield (images, targets)
 
 
-def load_yaml(filepath):
-    with open(filepath, 'r') as f:
-        data = yaml.safe_load(f)
-    return data
-
-
-def write_yaml(data, filepath):
-    with open(filepath, 'w') as f:
-        yaml.dump(data, f)
-
-
-def write_csv(file_path, entry_title, entry_data, index_names=None):
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path, index_col='name')
-        df[entry_title] = entry_data
-    else:
-        df = pd.DataFrame({'name': index_names, entry_title: entry_data}).set_index('name')
-    df.to_csv(file_path)
-
-
 class TensorDataset(Dataset):
     def __init__(self, images, labels):  # images: n x c x h x w tensor
         self.images = images.detach().float()
@@ -321,3 +276,15 @@ class TensorDataset(Dataset):
 
     def __len__(self):
         return self.images.shape[0]
+
+
+def load_yaml(filepath):
+    with open(filepath, 'r') as f:
+        data = yaml.safe_load(f)
+    return data
+
+
+def write_yaml(data, filepath):
+    with open(filepath, 'w') as f:
+        yaml.dump(data, f)
+
