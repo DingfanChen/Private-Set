@@ -10,7 +10,7 @@ Contact: Dingfan Chen ([dingfan.chen@cispa.de](mailto:dingfan.chen@cispa.de))
 
 
 ## Requirements
- - This implementation is based on [PyTorch](https://www.anaconda.com/download/) (tested for version 1.7.1). 
+ - This implementation is based on [PyTorch](https://pytorch.org/) (tested for version 1.7.1). 
  - Please refer to [requirements.txt](requirements.txt) for the other required packages and version. 
  - The differentially private training part is based on [Opacus](https://opacus.ai/) with version **0.15.0**.   
  Note that due to significant refactoring, later versions of [Opacus](https://opacus.ai/) (>=1.0.0) is **not** compatible with our implementation at the moment. 
