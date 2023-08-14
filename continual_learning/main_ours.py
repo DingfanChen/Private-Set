@@ -16,7 +16,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 sys.path.append('../')
-from utils.misc import get_network, get_dataset, get_eval_pool, get_loops, get_time, get_daparam, mkdir, TensorDataset, inf_train_gen, load_yaml, write_yaml
+from utils.misc import get_network, get_dataset, get_eval_pool, get_loops, get_time, get_daparam, mkdir, TensorDataset, inf_train_gen, load_yaml, write_yaml, to_numpy, concat
 from utils.ops import evaluate_synset, match_loss, epoch
 from utils.augmentation import DiffAugment, ParamDiffAug
 from opacus.utils.uniform_sampler import UniformWithReplacementSampler
@@ -116,10 +116,11 @@ def main():
 
     ### Load data
     channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args.dataset, data_path)
-    X_train_total = dst_train.data
-    Y_train_total = dst_train.targets
-    X_valid_total = dst_test.data
-    Y_valid_total = dst_test.targets
+    X_train_total = dst_train.data 
+    X_valid_total = dst_test.data 
+    Y_train_total = to_numpy(dst_train.targets)
+    Y_valid_total = to_numpy(dst_test.targets)
+
     order_list = load_yaml(os.path.join('configs', args.dataset + '_default.yml'))['order']
     order = np.array(order_list)
     X_valid_cumuls = []
@@ -171,20 +172,20 @@ def main():
     for task_id in range(task_start, n_experiences):
         ## Get dataloader
         actual_cl = order[task_id * args.nb_cl: (task_id + 1) * args.nb_cl]
-        indices_train_10 = np.array([i in order[task_id * args.nb_cl: (task_id + 1) * args.nb_cl] for i in Y_train_total.numpy()])
-        indices_test_10 = np.array([i in order[task_id * args.nb_cl: (task_id + 1) * args.nb_cl] for i in Y_valid_total.numpy()])
+        indices_train_10 = np.array([i in order[task_id * args.nb_cl: (task_id + 1) * args.nb_cl] for i in to_numpy(Y_train_total)])
+        indices_test_10 = np.array([i in order[task_id * args.nb_cl: (task_id + 1) * args.nb_cl] for i in to_numpy(Y_valid_total)])
         X_train = X_train_total[indices_train_10]
         X_valid = X_valid_total[indices_test_10]
         X_valid_cumuls.append(X_valid)
         X_train_cumuls.append(X_train)
-        X_valid_cumul = torch.cat(X_valid_cumuls)
-        X_train_cumul = torch.cat(X_train_cumuls)
+        X_valid_cumul = concat(X_valid_cumuls)
+        X_train_cumul = concat(X_train_cumuls)
         Y_train = Y_train_total[indices_train_10]
         Y_valid = Y_valid_total[indices_test_10]
         Y_valid_cumuls.append(Y_valid)
         Y_train_cumuls.append(Y_train)
-        Y_valid_cumul = torch.cat(Y_valid_cumuls)
-        Y_train_cumul = torch.cat(Y_train_cumuls)
+        Y_valid_cumul = concat(Y_valid_cumuls)
+        Y_train_cumul = concat(Y_train_cumuls)
         map_Y_train = torch.tensor([order_list.index(i) for i in Y_train])
         map_Y_valid_cumul = torch.tensor([order_list.index(i) for i in Y_valid_cumul])
 
@@ -197,11 +198,11 @@ def main():
 
         testset.data = X_valid
         testset.targets = Y_valid
-        testloader = torch.utils.data.DataLoader(testset, batch_size=256, shuffle=False, num_workers=2)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=256, shuffle=False, num_workers=0)
 
         evalset.data = X_valid_cumul
         evalset.targets = map_Y_valid_cumul
-        evalloader = torch.utils.data.DataLoader(evalset, batch_size=256, shuffle=False, num_workers=2)
+        evalloader = torch.utils.data.DataLoader(evalset, batch_size=256, shuffle=False, num_workers=0)
         evalclasses = order[:(task_id + 1) * args.nb_cl]
         indices_syneval_10 = np.array([i in evalclasses for i in label_syn_total])
         indices_syntrain_10 = np.array([i in actual_cl for i in label_syn_total])
