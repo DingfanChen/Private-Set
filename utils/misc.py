@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from .networks import MLP, ConvNet, LeNet, AlexNet, VGG11BN, VGG11, ResNet18, ResNet18BN_AP
 
-__all__ = ['get_dataset', 'get_network', 'get_time', 'get_loops', 'get_daparam', 'get_eval_pool', 'mkdir', 'flatten_tensor', 'inf_train_gen', 'TensorDataset', 'load_yaml', 'write_yaml']
+__all__ = ['get_dataset', 'get_network', 'get_time', 'get_loops', 'get_daparam', 'get_eval_pool', 'mkdir', 'flatten_tensor', 'inf_train_gen', 'TensorDataset', 'load_yaml', 'write_yaml', 'to_numpy', 'concat']
 
 
 def get_dataset(dataset, data_path):
@@ -288,3 +288,19 @@ def write_yaml(data, filepath):
     with open(filepath, 'w') as f:
         yaml.dump(data, f)
 
+
+def to_numpy(obj):
+    if torch.is_tensor(obj):
+        return obj.numpy() 
+    else:
+        return np.array(obj)
+    
+    
+def concat(objs):
+    if torch.is_tensor(objs[0]):
+        return torch.cat(objs)
+    else:
+        return np.concatenate(objs)
+    
+    
+    
